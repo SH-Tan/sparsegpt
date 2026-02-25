@@ -268,3 +268,5 @@ models_diff_10l/
 __MACOSX/*.pth
 *.pt
 *.ckpt
+
+Results/
