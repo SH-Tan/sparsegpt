@@ -270,3 +270,4 @@ __MACOSX/*.pth
 *.ckpt
 
 Results/
+Data/
