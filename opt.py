@@ -310,7 +310,7 @@ if __name__ == '__main__':
     # CIFAR10 ReLU
     elif args.model == "vgg9_relu" and args.dataset == 'cifar10':
         model = vgg9_relu.VGG9_CIFAR10()
-        model_name = 'vgg9_10_adv_relu_s2.pth'
+        model_name = 'vgg9_10_ori_relu_s2.pth'
     # CIFAR100 ReLU
     elif args.model == "vgg9_relu" and args.dataset == 'cifar100':
         model = vgg9_relu.VGG9_CIFAR10(num_classes=100)
@@ -337,13 +337,32 @@ if __name__ == '__main__':
 
     if (args.sparsity or args.prunen) and not args.gmp:
         for sparsity in args.sparsity:
+            
             tick = time.time()
+            torch.cuda.synchronize(device)
+            # 🔹 reset peak stats for this layer
+            torch.cuda.reset_peak_memory_stats(device)
+            torch.cuda.synchronize(device)
+            
             pretrained_dict = torch.load(pretrained_path + model_name)
             model_dict = model.state_dict()
             model_dict.update(pretrained_dict)
             model.load_state_dict(model_dict)
             
             opt_sequential(model, prune_loader, device, sparsity)
+            
+            end_t = time.time()
+            print(f'time for one sparsity = {end_t-tick}')
+            # 🔹 timing end
+            torch.cuda.synchronize(device)
+
+            # 🔹 memory stats
+            alloc = torch.cuda.memory_allocated(device) / 1024**2
+            reserved = torch.cuda.memory_reserved(device) / 1024**2
+            peak = torch.cuda.max_memory_allocated(device) / 1024**2
+
+            # 🔹 write per-layer log
+            print(f"{alloc:9.1f} | {reserved:11.1f} | {peak:8.1f}\n")
             
             # ---- sparsity stats ----
             total_params = 0
